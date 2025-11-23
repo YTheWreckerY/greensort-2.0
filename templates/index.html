@@ -1,159 +1,126 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GreenSort — BioMatrix</title>
+<script type="module">
+// -----------------------------
+// CONFIG
+// -----------------------------
+const API_URL: string = "https://greensort-2-0.onrender.com/api/identify/";
 
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
-</head>
 
-<body>
-  <div class="bg">
-    <div class="orb o1"></div>
-    <div class="orb o2"></div>
-    <div class="orb o3"></div>
-  </div>
+// -----------------------------
+// TYPES
+// -----------------------------
+interface PredictionItem {
+    filename: string;
+    name?: string;
+    description?: string;
+    error?: string;
+}
 
-  <header class="nav">
-    <div class="brand">
-      <div class="logo-blob"></div>
-      <span>BioMatrix</span>
-    </div>
-    <button id="themeToggle">☾</button>
-  </header>
+interface PredictionResponse {
+    results?: PredictionItem[];
+}
 
-  <main class="wrap">
 
-    <!-- HERO -->
-    <section class="hero card tilt">
-      <h1><span class="grad">GreenSort</span></h1>
-      <div class="cta-row">
-        <label for="fileInput" class="btn primary">Upload Images</label>
-        <input id="fileInput" type="file" accept="image/*" multiple hidden />
-        <button id="openCamera" class="btn ghost">Open Camera</button>
-      </div>
-    </section>
-
-    <!-- CAMERA -->
-    <section id="cameraCard" class="card camera-card hidden">
-      <div class="camera-row">
-        <video id="cameraVideo" autoplay playsinline></video>
-        <canvas id="cameraCanvas" class="hidden"></canvas>
-      </div>
-      <div class="camera-controls">
-        <button id="captureBtn" class="btn primary">Capture & Analyze</button>
-        <button id="closeCamera" class="btn ghost">Close Camera</button>
-      </div>
-    </section>
-
-    <!-- DROPZONE -->
-    <section id="dropzone" class="dropzone card tilt">
-      <div class="dz-icon">⬆</div>
-      <div class="dz-text">
-        <strong>Drag & drop</strong> images here, or click
-        <span class="underline" id="dzClick">browse</span>.
-      </div>
-    </section>
-
-    <!-- RESULTS -->
-    <section>
-      <div id="results" class="grid"></div>
-    </section>
-
-  </main>
-
-<script>
-/* -------------------------
-   CONFIG
--------------------------- */
-const API_URL = "https://greensort-2-0.onrender.com/api/identify/";
-
-/* -------------------------
-   UPLOAD FUNCTION
--------------------------- */
-async function uploadImages(files) {
+// -----------------------------
+// UPLOAD FUNCTION
+// -----------------------------
+async function uploadImages(files: FileList | Blob[]): Promise<PredictionResponse> {
     const formData = new FormData();
-    for (const f of files) formData.append("images", f);
+    for (const file of files as any) {
+        formData.append("images", file);
+    }
 
-    const res = await fetch(API_URL, {
+    const response = await fetch(API_URL, {
         method: "POST",
         body: formData
     });
 
-    return await res.json();
+    return await response.json();
 }
 
-/* -------------------------
-   DOM ELEMENTS
--------------------------- */
-const fileInput = document.getElementById("fileInput");
-const dropzone = document.getElementById("dropzone");
-const dzClick = document.getElementById("dzClick");
-const results = document.getElementById("results");
 
-const openCamera = document.getElementById("openCamera");
-const cameraCard = document.getElementById("cameraCard");
-const cameraVideo = document.getElementById("cameraVideo");
-const cameraCanvas = document.getElementById("cameraCanvas");
-const captureBtn = document.getElementById("captureBtn");
-const closeCamera = document.getElementById("closeCamera");
+// -----------------------------
+// DOM ELEMENTS
+// -----------------------------
+const fileInput = document.getElementById("fileInput") as HTMLInputElement;
+const dropzone = document.getElementById("dropzone") as HTMLElement;
+const dzClick = document.getElementById("dzClick") as HTMLElement;
+const results = document.getElementById("results") as HTMLElement;
 
-/* -------------------------
-   DISPLAY RESULT CARDS
--------------------------- */
-function showResults(data) {
+const openCamera = document.getElementById("openCamera") as HTMLButtonElement;
+const cameraCard = document.getElementById("cameraCard") as HTMLElement;
+const cameraVideo = document.getElementById("cameraVideo") as HTMLVideoElement;
+const cameraCanvas = document.getElementById("cameraCanvas") as HTMLCanvasElement;
+const captureBtn = document.getElementById("captureBtn") as HTMLButtonElement;
+const closeCamera = document.getElementById("closeCamera") as HTMLButtonElement;
+
+
+// -----------------------------
+// DISPLAY RESULT CARDS
+// -----------------------------
+function showResults(data: PredictionResponse): void {
     results.innerHTML = "";
-    if (!data || !data.results) return;
+    if (!data?.results) return;
 
-    data.results.forEach(item => {
+    data.results.forEach((item: PredictionItem) => {
         const card = document.createElement("div");
         card.className = "result-card card";
 
+        const content = item.error
+            ? `<p class="error">${item.error}</p>`
+            : `
+                <p><strong>Name:</strong> ${item.name}</p>
+                <p><strong>Description:</strong> ${item.description}</p>
+              `;
+
         card.innerHTML = `
-          <h3>${item.filename}</h3>
-          ${item.error ? 
-            `<p class='error'>${item.error}</p>` :
-            `
-            <p><strong>Name:</strong> ${item.name}</p>
-            <p><strong>Description:</strong> ${item.description}</p>
-            `
-          }
+            <h3>${item.filename}</h3>
+            ${content}
         `;
+
         results.appendChild(card);
     });
 }
 
-/* -------------------------
-   FILE INPUT
--------------------------- */
+
+// -----------------------------
+// FILE INPUT HANDLER
+// -----------------------------
 fileInput.addEventListener("change", async () => {
-    const data = await uploadImages(fileInput.files);
-    showResults(data);
+    if (fileInput.files) {
+        const data = await uploadImages(fileInput.files);
+        showResults(data);
+    }
 });
 
-/* -------------------------
-   DROPZONE
--------------------------- */
-dropzone.addEventListener("dragover", e => {
+
+// -----------------------------
+// DROPZONE
+// -----------------------------
+dropzone.addEventListener("dragover", (e: DragEvent) => {
     e.preventDefault();
     dropzone.classList.add("hover");
 });
-dropzone.addEventListener("dragleave", () => dropzone.classList.remove("hover"));
-dropzone.addEventListener("drop", async e => {
+
+dropzone.addEventListener("dragleave", () => {
+    dropzone.classList.remove("hover");
+});
+
+dropzone.addEventListener("drop", async (e: DragEvent) => {
     e.preventDefault();
     dropzone.classList.remove("hover");
 
-    const data = await uploadImages(e.dataTransfer.files);
-    showResults(data);
+    if (e.dataTransfer?.files) {
+        const data = await uploadImages(e.dataTransfer.files);
+        showResults(data);
+    }
 });
+
 dzClick.addEventListener("click", () => fileInput.click());
 
-/* -------------------------
-   CAMERA
--------------------------- */
+
+// -----------------------------
+// CAMERA CONTROLS
+// -----------------------------
 openCamera.addEventListener("click", async () => {
     cameraCard.classList.remove("hidden");
 
@@ -163,24 +130,26 @@ openCamera.addEventListener("click", async () => {
 
 closeCamera.addEventListener("click", () => {
     cameraCard.classList.add("hidden");
-    let tracks = cameraVideo.srcObject?.getTracks();
+
+    const tracks = cameraVideo.srcObject?.getTracks();
     tracks?.forEach(t => t.stop());
 });
 
+
 captureBtn.addEventListener("click", async () => {
     const ctx = cameraCanvas.getContext("2d");
+    if (!ctx) return;
+
     cameraCanvas.width = cameraVideo.videoWidth;
     cameraCanvas.height = cameraVideo.videoHeight;
+
     ctx.drawImage(cameraVideo, 0, 0);
 
     cameraCanvas.toBlob(async (blob) => {
+        if (!blob) return;
         const data = await uploadImages([blob]);
         showResults(data);
     }, "image/jpeg");
 });
+
 </script>
-
-</body>
-</html>
-
-
