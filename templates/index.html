@@ -4,12 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GreenSort — BioMatrix</title>
+
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-  <!-- Animated BG Particles -->
   <div class="bg">
     <div class="orb o1"></div>
     <div class="orb o2"></div>
@@ -21,13 +22,13 @@
       <div class="logo-blob"></div>
       <span>BioMatrix</span>
     </div>
-    <nav class="links">
-    </nav>
-    <button id="themeToggle" aria-label="Toggle theme">☾</button>
+    <button id="themeToggle">☾</button>
   </header>
 
   <main class="wrap">
-    <section class="hero card tilt" data-tilt>
+
+    <!-- HERO -->
+    <section class="hero card tilt">
       <h1><span class="grad">GreenSort</span></h1>
       <div class="cta-row">
         <label for="fileInput" class="btn primary">Upload Images</label>
@@ -36,8 +37,8 @@
       </div>
     </section>
 
-    <!-- Camera area (hidden until opened) -->
-    <section id="cameraCard" class="card camera-card tilt hidden" data-tilt>
+    <!-- CAMERA -->
+    <section id="cameraCard" class="card camera-card hidden">
       <div class="camera-row">
         <video id="cameraVideo" autoplay playsinline></video>
         <canvas id="cameraCanvas" class="hidden"></canvas>
@@ -46,38 +47,138 @@
         <button id="captureBtn" class="btn primary">Capture & Analyze</button>
         <button id="closeCamera" class="btn ghost">Close Camera</button>
       </div>
-      <div class="camera-hint">Tip: on mobiles allow camera access and switch to the back camera for better results.</div>
     </section>
 
-    <section id="dropzone" class="dropzone card tilt" data-tilt>
+    <!-- DROPZONE -->
+    <section id="dropzone" class="dropzone card tilt">
       <div class="dz-icon">⬆</div>
       <div class="dz-text">
-        <strong>Drag & drop</strong> images here, or click <span class="underline" id="dzClick">browse</span>.
+        <strong>Drag & drop</strong> images here, or click
+        <span class="underline" id="dzClick">browse</span>.
       </div>
     </section>
 
+    <!-- RESULTS -->
     <section>
       <div id="results" class="grid"></div>
     </section>
+
   </main>
 
-  <script>
-    const API_URL = "https://greensort-2-0.onrender.com/api/identify";
+<script>
+/* -------------------------
+   CONFIG
+-------------------------- */
+const API_URL = "https://greensort-2-0.onrender.com/api/identify";
 
-    async function uploadImages(files) {
-        const formData = new FormData();
-        for (const f of files) formData.append("images", f);
+/* -------------------------
+   UPLOAD FUNCTION
+-------------------------- */
+async function uploadImages(files) {
+    const formData = new FormData();
+    for (const f of files) formData.append("images", f);
 
-        const res = await fetch(API_URL, {
-            method: "POST",
-            mode: "cors",
-            body: formData
-        });
+    const res = await fetch(API_URL, {
+        method: "POST",
+        body: formData
+    });
 
-        return await res.json();
-    }
+    return await res.json();
+}
+
+/* -------------------------
+   DOM ELEMENTS
+-------------------------- */
+const fileInput = document.getElementById("fileInput");
+const dropzone = document.getElementById("dropzone");
+const dzClick = document.getElementById("dzClick");
+const results = document.getElementById("results");
+
+const openCamera = document.getElementById("openCamera");
+const cameraCard = document.getElementById("cameraCard");
+const cameraVideo = document.getElementById("cameraVideo");
+const cameraCanvas = document.getElementById("cameraCanvas");
+const captureBtn = document.getElementById("captureBtn");
+const closeCamera = document.getElementById("closeCamera");
+
+/* -------------------------
+   DISPLAY RESULT CARDS
+-------------------------- */
+function showResults(data) {
+    results.innerHTML = "";
+    if (!data || !data.results) return;
+
+    data.results.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "result-card card";
+
+        card.innerHTML = `
+          <h3>${item.filename}</h3>
+          ${item.error ? 
+            `<p class='error'>${item.error}</p>` :
+            `
+            <p><strong>Name:</strong> ${item.name}</p>
+            <p><strong>Description:</strong> ${item.description}</p>
+            `
+          }
+        `;
+        results.appendChild(card);
+    });
+}
+
+/* -------------------------
+   FILE INPUT
+-------------------------- */
+fileInput.addEventListener("change", async () => {
+    const data = await uploadImages(fileInput.files);
+    showResults(data);
+});
+
+/* -------------------------
+   DROPZONE
+-------------------------- */
+dropzone.addEventListener("dragover", e => {
+    e.preventDefault();
+    dropzone.classList.add("hover");
+});
+dropzone.addEventListener("dragleave", () => dropzone.classList.remove("hover"));
+dropzone.addEventListener("drop", async e => {
+    e.preventDefault();
+    dropzone.classList.remove("hover");
+
+    const data = await uploadImages(e.dataTransfer.files);
+    showResults(data);
+});
+dzClick.addEventListener("click", () => fileInput.click());
+
+/* -------------------------
+   CAMERA
+-------------------------- */
+openCamera.addEventListener("click", async () => {
+    cameraCard.classList.remove("hidden");
+
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    cameraVideo.srcObject = stream;
+});
+
+closeCamera.addEventListener("click", () => {
+    cameraCard.classList.add("hidden");
+    let tracks = cameraVideo.srcObject?.getTracks();
+    tracks?.forEach(t => t.stop());
+});
+
+captureBtn.addEventListener("click", async () => {
+    const ctx = cameraCanvas.getContext("2d");
+    cameraCanvas.width = cameraVideo.videoWidth;
+    cameraCanvas.height = cameraVideo.videoHeight;
+    ctx.drawImage(cameraVideo, 0, 0);
+
+    cameraCanvas.toBlob(async (blob) => {
+        const data = await uploadImages([blob]);
+        showResults(data);
+    }, "image/jpeg");
+});
 </script>
+
 </body>
 </html>
-
-
