@@ -109,4 +109,5 @@ if __name__ == "__main__":
     # CORS for local dev convenience
     from flask_cors import CORS
     CORS(app, resources={r"/api/*": {"origins": "*"}})
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
+
