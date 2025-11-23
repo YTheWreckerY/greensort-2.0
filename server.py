@@ -23,7 +23,7 @@ app.config["MAX_CONTENT_LENGTH"] = 15 * 1024 * 1024
 PROMPT = (
     "Identify the garbage in the image and classify the waste and suggest in brief a few ways to deal with the waste. "
     "Format the output as:\n"
-    "Name: <name>\nDescription: <description>"
+    "Name: <name>\Ways: <description>"
 )
 
 def identify_from_bytes(image_bytes, mime_type):
@@ -101,5 +101,6 @@ def identify_api():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
 
