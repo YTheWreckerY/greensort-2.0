@@ -1,0 +1,6 @@
+requests
+base64
+dotenv
+flask
+flask_cors
+werkzeug
