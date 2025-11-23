@@ -1,7 +1,7 @@
 import os
 import base64
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -101,4 +101,5 @@ def identify_api():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
