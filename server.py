@@ -67,7 +67,11 @@ def identify_from_bytes(image_bytes, mime_type):
         description = text.strip()
 
     return {"name": name, "description": description}
-
+    
+@app.route("/")
+def index():
+    return render_template('index.html')
+    
 @app.post("/api/identify")
 def identify_api():
     if "images" not in request.files:
@@ -97,3 +101,4 @@ def identify_api():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
