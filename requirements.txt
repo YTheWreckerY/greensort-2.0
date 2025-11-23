@@ -2,5 +2,6 @@ requests
 dotenv
 flask
 flask_cors
-
+gunicorn
 werkzeug
+
